@@ -5,9 +5,13 @@ function App() {
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [message, setMessage] = useState("");
   const [messagesList, setMessagesList] = useState([]);
+  const [socketId, setSocketId] = useState("");
 
   useEffect(() => {
-    const onConnect = () => setIsConnected(true);
+    const onConnect = () => {
+      setIsConnected(true);
+      setSocketId(socket.id);
+    };
 
     const onDisconnect = () => setIsConnected(false);
 
@@ -51,6 +55,7 @@ function App() {
           {!isConnected ? "Connect" : "Disconnect"}
         </button>
       </p>
+      <p className="font-bold text-white">SocketID {socketId}</p>
       <form
         className="bg-slate-600 container mx-auto p-10 border border-sky-500"
         onSubmit={handleSubmit}

@@ -2,9 +2,28 @@ const express = require("express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const { instrument } = require("@socket.io/admin-ui");
+const { createClient } = require("redis");
+const { createAdapter } = require("@socket.io/redis-adapter");
 
 const app = express();
 const httpServer = createServer(app);
+
+// redis adapter configuratino
+// const pubClient = createClient({
+//   password: "8mFtq5qS3rnZEkVV8XZyHwRHcCAi6rSW",
+//   socket: {
+//     host: "redis-18005.c264.ap-south-1-1.ec2.cloud.redislabs.com",
+//     port: 18005,
+//   },
+// });
+const pubClient = createClient({
+  socket: {
+    host: "redis-srv",
+    port: 6379,
+  },
+});
+const subClient = pubClient.duplicate();
+
 const io = new Server(httpServer, {
   connectionStateRecovery: {
     // the backup duration of the sessions and the packets
@@ -13,9 +32,15 @@ const io = new Server(httpServer, {
     skipMiddlewares: true,
   },
   cors: {
-    origin: ["https://admin.socket.io", "http://localhost:5173"],
+    // origin: "*",
+    origin: ["http://client-srv", "http://localhost:5173", "https://admin.socket.io"],
     credentials: true,
   },
+});
+
+Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+  io.adapter(createAdapter(pubClient, subClient));
+  // io.listen(3000);
 });
 
 instrument(io, {
@@ -41,7 +66,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", (reason) => {
-    console.log(reason);
+    console.log(`Disconnection: ${reason} with socket id: ${socket.id}`);
   });
 });
 
